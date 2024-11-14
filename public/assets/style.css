@@ -1,0 +1,73 @@
+#header {
+  background: #00004D;
+  height: 3em;
+}
+
+#logo {
+  font-size: 1em;
+  padding: .8em 0;
+  height: 2em;
+  font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+  font-weight: 700;
+}
+
+#agency-logo {
+  display: block;
+  margin: 2em 0;
+}
+
+.logo-header {
+  height: auto;
+}
+
+#footer {
+  background: #00004D;
+}
+
+.logo-footer-space {
+  position: initial;
+  transform: translate(0, -50%);
+  margin: 0 auto;
+  width: 445px;
+}
+
+.usa-banner {
+  font-family: Source Sans Pro Web, Helvetica Neue, Helvetica, Roboto, Arial, sans-serif;
+  line-height: 1.5;
+  background-color: #f0f0f0;
+  font-size: .87rem;
+  padding-bottom: 0;
+  height: 1.5em
+}
+.usa-banner__header {
+  padding-bottom: .25rem;
+  padding-top: .25rem;
+  min-height: 0;
+}
+.usa-banner__inner {
+  display: flex;
+}
+[class*=grid-col] {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+.usa-banner__header-flag {
+    float: left;
+    margin-right: .5rem;
+    width: 1rem;
+}
+.usa-banner__header-text {
+    margin-bottom: 0;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: .8rem;
+    line-height: 1.1;
+}
+
+.grid-col-auto, .grid-col-fill, .tablet\:grid-col-auto {
+    flex: 0 1 auto;
+    width: auto;
+    max-width: 100%;
+}
