@@ -1,5 +1,5 @@
 {
-    "name": "hhs/uwp-oash-simplesamlphp-module-uwpoash",
+    "name": "hhs/simplesamlphp-module-uwpoash",
     "description": "This module provides a user authorization filter based on attribute matching, customized to OASH and AMS",
     "type": "simplesamlphp-module",
     "keywords": ["simplesamlphp", "authorize", "oash"],
