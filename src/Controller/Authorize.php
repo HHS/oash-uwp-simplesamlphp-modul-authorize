@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SimpleSAML\Module\authorize\Controller;
+namespace SimpleSAML\Module\uwpoash\Controller;
 
 use SimpleSAML\Auth;
 use SimpleSAML\Configuration;
@@ -52,9 +52,9 @@ class Authorize
         }
 
         /** @var array $state */
-        $state = Auth\State::loadState($stateId, 'authorize:Authorize');
+        $state = Auth\State::loadState($stateId, 'uwpoash:Authorize');
 
-        $t = new Template($this->config, 'authorize:authorize_403.twig');
+        $t = new Template($this->config, 'uwpoash:authorize_403.twig');
         if (isset($state['Source']['auth'])) {
             $t->data['source'] = $state['Source']['auth'];
         }
@@ -72,7 +72,7 @@ class Authorize
         }
 
         $t->data['allow_reauthentication'] = $state['authprocAuthorize_allow_re_authenticate_on_unauthorized'] ?? false;
-        $stateId = Auth\State::saveState($state, 'authorize:Authorize');
+        $stateId = Auth\State::saveState($state, 'uwpoash:Authorize');
         $t->data['url_reauthentication'] =
             Module::getModuleURL('authorize/error/reauthenticate', ['StateId' => $stateId]);
 
@@ -109,7 +109,7 @@ class Authorize
             throw new Error\BadRequest('Missing required StateId query parameter.');
         }
         /** @var array $state */
-        $state = Auth\State::loadState($stateId, 'authorize:Authorize');
+        $state = Auth\State::loadState($stateId, 'uwpoash:Authorize');
 
         $authSource = $state['Source']['auth'];
         if (empty($authSource)) {

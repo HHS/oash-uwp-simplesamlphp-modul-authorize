@@ -1,13 +1,17 @@
 {
-    "name": "simplesamlphp/simplesamlphp-module-authorize",
-    "description": "This module provides a user authorization filter based on attribute matching",
+    "name": "hhs/uwp-oash-simplesamlphp-module-uwpoash",
+    "description": "This module provides a user authorization filter based on attribute matching, customized to OASH and AMS",
     "type": "simplesamlphp-module",
-    "keywords": ["simplesamlphp", "authorize"],
+    "keywords": ["simplesamlphp", "authorize", "oash"],
     "license": "LGPL-2.1-or-later",
     "authors": [
         {
             "name": "Ernesto Revilla",
             "email": "erny@yaco.es"
+        },
+        {
+            "name": "Ryan Price",
+            "email": "ryan.price@hhs.gov"
         }
     ],
     "config": {
@@ -24,12 +28,12 @@
     },
     "autoload": {
         "psr-4": {
-            "SimpleSAML\\Module\\authorize\\": "src/"
+            "SimpleSAML\\Module\\uwpoash\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "SimpleSAML\\Module\\Authorize\\Tests\\Utils\\": "tests/Utils",
+            "SimpleSAML\\Module\\uwpoash\\Tests\\Utils\\": "tests/Utils",
             "SimpleSAML\\Test\\Utils\\": "vendor/simplesamlphp/simplesamlphp/tests/Utils"
         }
     },

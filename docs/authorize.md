@@ -7,10 +7,10 @@ This module provides a user authorization filter based on attribute matching
 for those applications that do not cleanly separate authentication from
 authorization and set some default permissions for authenticated users.
 
-`authorize:Authorize`
+`uwpoash:Authorize`
 : Authorize certain users based on attribute matching
 
-## `authorize:Authorize`
+## `uwpoash:Authorize`
 
 There are three configuration options that can be defined: `deny`, `regex`,
 and `reject_msg`. All other filter configuration options are considered
@@ -97,7 +97,7 @@ For unstructured attributes use `^` and `$` to anchor your regex as necessary:
 ```php
 'authproc.sp' => [
     60 => [
-        'class' => 'authorize:Authorize',
+        'class' => 'uwpoash:Authorize',
         'uid'   =>  [
             '/^.*@example.com$/',
             /*
@@ -119,7 +119,7 @@ then denying a "black list" of users.
 ```php
 'authproc.sp' => [
     60 => array[
-        'class' => 'authorize:Authorize',
+        'class' => 'uwpoash:Authorize',
         'deny'  => true,
         'uid'   =>  [
             '/.*@students.example.edu$/',
@@ -139,7 +139,7 @@ Additionally, some helpful instructions are shown.
 ```php
 'authproc.sp' => [
     60 => [
-        'class' => 'authorize:Authorize',
+        'class' => 'uwpoash:Authorize',
         'regex' => false,
         'group' => [
             'CN=SimpleSAML Students,CN=Users,DC=example,DC=edu',

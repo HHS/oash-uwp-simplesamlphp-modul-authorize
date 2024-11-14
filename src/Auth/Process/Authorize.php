@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SimpleSAML\Module\authorize\Auth\Process;
+namespace SimpleSAML\Module\uwpoash\Auth\Process;
 
 use Exception;
 use SimpleSAML\Assert\Assert;
@@ -22,7 +22,7 @@ use function preg_match;
 use function var_export;
 
 /**
- * Filter to authorize only certain users.
+ * OASH: Filter to authorize only users with a proper IAL, AAL (unless they have PIVException).
  * See docs directory.
  *
  * @package SimpleSAMLphp
@@ -57,6 +57,20 @@ class Authorize extends Auth\ProcessingFilter
      * @var bool
      */
     protected bool $errorURL = true;
+
+    /**
+     * URL to send a user to if their IAL or AAL is not high enough.
+     *
+     * @var string
+     */
+    protected string $loginURL = 'https://preprod.uw.health.gov/saml_login';
+
+    /**
+     * Param to send to AMS in case we need to reauthorize.
+     *
+     * @var string
+     */
+    protected string $appName = 'AMS-APP-LOA4';
 
     /**
      * Array of valid users. Each element is a regular expression. You should
@@ -96,17 +110,29 @@ class Authorize extends Auth\ProcessingFilter
             unset($config['deny']);
         }
 
+        // #OASH: We do not need this option.
         // Check for the regex option
         // Must be bool specifically, if not, it might be for an attrib filter below
-        if (isset($config['regex']) && is_bool($config['regex'])) {
-            $this->regex = $config['regex'];
-            unset($config['regex']);
-        }
-
-        // Check for the reject_msg option; Must be array of languages
+        // if (isset($config['regex']) && is_bool($config['regex'])) {
+        //     $this->regex = $config['regex'];
+        //     unset($config['regex']);
+        // }.
+        // Check for the reject_msg option; Must be array of languages.
         if (isset($config['reject_msg']) && is_array($config['reject_msg'])) {
             $this->reject_msg = $config['reject_msg'];
             unset($config['reject_msg']);
+        }
+
+        // Check for the appName option.
+            if (isset($config['appName']) && is_string($config['appName'])) {
+            $this->appName = $config['appName'];
+            unset($config['appName']);
+        }
+
+        // Check for the loginURL option.
+            if (isset($config['loginURL']) && is_string($config['loginURL'])) {
+            $this->loginURL = $config['loginURL'];
+            unset($config['loginURL']);
         }
 
         // Check for the errorURL option
@@ -174,22 +200,76 @@ class Authorize extends Auth\ProcessingFilter
         $arrayUtils = new Utils\Arrays();
         foreach ($this->valid_attribute_values as $name => $patterns) {
             if (array_key_exists($name, $attributes)) {
-                foreach ($patterns as $pattern) {
-                    $values = $arrayUtils->arrayize($attributes[$name]);
-                    foreach ($values as $value) {
-                        if ($this->regex) {
-                            $matched = preg_match($pattern, $value);
-                        } else {
-                            $matched = ($value === $pattern);
-                        }
+                // #OASH: change the logic of authorization.
+                $values = $arrayUtils->arrayize($attributes[$name]);
+                if (is_string($patterns['operator']) && is_numeric($patterns['value']) && $operator = filter_var($patterns['operator'], FILTER_VALIDATE_REGEXP, ["options" => ["regexp" => '/^(<=|>=|==|!=|<|>)$/']])) {
 
-                        if ($matched) {
-                            $authorize = ($this->deny ? false : true);
-                            array_push($ctx, $name);
-                            break 3;
+
+                switch ($patterns['operator']) {
+                    case "<":
+                    if ($values[0] < $patterns['value']) {
+                        $authorize = ($this->deny ? FALSE : TRUE);
+                    }
+                    break;
+                    case "<=":
+                    if ($values[0] <= $patterns['value']) {
+                        $authorize = ($this->deny ? FALSE : TRUE);
+                    }
+                    break;
+                    case ">":
+                    if ($values[0] > $patterns['value']) {
+                        $authorize = ($this->deny ? FALSE : TRUE);
+                    }
+                    break;
+                    case ">=":
+                    if ($values[0] >= $patterns['value']) {
+                        $authorize = ($this->deny ? FALSE : TRUE);
+                    }
+                    break;
+                    case "==":
+                    if ($values[0] == $patterns['value']) {
+                        $authorize = ($this->deny ? FALSE : TRUE);
+                    }
+                    break;
+                    case "!=":
+                    if ($values[0] != $patterns['value']) {
+                        $authorize = ($this->deny ? FALSE : TRUE);
+                    }
+                    break;
+
+                }
+
+                if (!$authorize) {
+                    if (isset($patterns['exception']) && is_string($patterns['exception'])) {
+                        $exceptions = $arrayUtils->arrayize($attributes[$patterns['exception']]);
+                        if (filter_var($exceptions[0], FILTER_VALIDATE_BOOLEAN)) {
+                            $authorize = $this->deny;
                         }
                     }
+                    // If any checks fail and there is no exception, stop checking.
+                    else {
+                        break;
+                    }
+
                 }
+                }
+
+                // foreach ($patterns as $pattern) {
+                //     $values = $arrayUtils->arrayize($attributes[$name]);
+                //     foreach ($values as $value) {
+                //         if ($this->regex) {
+                //             $matched = preg_match($pattern, $value);
+                //         } else {
+                //             $matched = ($value === $pattern);
+                //         }.
+                // if ($matched) {
+                //             $authorize = ($this->deny ? false : true);
+                //             array_push($ctx, $name);
+                //             break 3;
+                //         }
+                //     }
+                // }.
+                // #OASH: end change logic of authorization.
             }
         }
 
@@ -216,23 +296,27 @@ class Authorize extends Auth\ProcessingFilter
 
 
     /**
-     * When the process logic determines that the user is not
-     * authorized for this service, then forward the user to
-     * an 403 unauthorized page.
+     * OASH: Users can be redirected if IAL or AAL is too low.
      *
-     * Separated this code into its own method so that child
-     * classes can override it and change the action. Forward
-     * thinking in case a "chained" ACL is needed, more complex
-     * permission logic.
+     * Step-Up URL is documented below, but it can be built from config.
      *
      * @param array $state
      */
     protected function unauthorized(array &$state): void
     {
-        // Save state and redirect to 403 page
-        $id = Auth\State::saveState($state, 'authorize:Authorize');
-        $url = Module::getModuleURL('authorize/error/forbidden');
+        // Save state and redirect to 403 page.
+        $id = Auth\State::saveState($state, 'uwpoash:Authorize');
+
+        // Expected:
+        // 'https://dev.uw.health.gov/amsLogin/ssoError?appName=AMS-APP-LOA4&TARGET=https%3A%2F%2Fpreprod.uw.health.gov%2Fsaml_login'
+        // 'https://postprod.ams.hhs.gov/amsLogin/ssoError?appName=AMS-APP-LOA4&TARGET=https%3A%2F%2Fpreprod.uw.health.gov%2Fsaml_login'
+        // Get AMS domain; trim trailing slash, space or null character.
+        // Redirect back to login page once Step-Up is finished.
+        $url = rtrim($state['Source']['entityid'], ' /\0') . '/amsLogin/ssoError';
+
+        // $url = Module::getModuleURL('uwpoash/error/forbidden');
         $httpUtils = new Utils\HTTP();
-        $httpUtils->redirectTrustedURL($url, ['StateId' => $id]);
+        $httpUtils->redirectTrustedURL($url, ['appName' => $this->appName, 'TARGET' => $this->loginURL]);
+        // $httpUtils->redirectTrustedURL($url, ['StateId' => $id]);
     }
 }
